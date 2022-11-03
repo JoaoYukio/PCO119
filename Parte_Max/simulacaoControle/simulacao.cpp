@@ -171,57 +171,67 @@ class speedPIControl{
                 setPoint = 1;
             }
             control = getControl(input, setPoint);
-            input = input + control;
-            output[i] = input;
+            input = control;
+            output[i] = control;
         }
         return output;
     }
 };
 
 // Series control function
-void seriesControl(stabilityPDControl pd1, speedPIControl pi)
+void seriesControl(speedPIControl pi, stabilityPDControl pd1, int simTime)
 {
     float setPoint = 0; 
-    float input = 0;
-    float inputPI = 0;
-    float* outputPI = (float*)malloc(sizeof(float)*100);
-    float* outputPD = (float*)malloc(sizeof(float)*100);
+    //float input = 0;
+    float outPD = 0;
+    float* outputPI = (float*)malloc(sizeof(float)*simTime);
+    float* outputPD = (float*)malloc(sizeof(float)*simTime);
 
-    for(int i = 0; i < 100 - 1; i++)
+    for(int i = 0; i < simTime; i++)
     {
         if(i < 10){
             setPoint = 0;
         }else{
             setPoint = 1;
         }
-        outputPD[i] = pd1.getControl(input, setPoint);
-        outputPI[i] = pi.getControl(setPoint,outputPD[i]);
+        outputPI[i] = pi.getControl(outPD, setPoint);
+        outputPD[i] = pd1.getControl(outPD, outputPI[i]);
         
-        input = input + outputPI[i];
-        inputPI = outputPD[i] - outputPI[i];
+        outPD = outputPD[i];
     }
 
     printf("Saida controlador PD\n");
-    for(int i = 0; i < 100; i++)
+    for(int i = 0; i < simTime; i++)
     {
         //printf("%f,%f", outputPD[i], outputPI[i]);
         
         printf("%f,", outputPD[i]);
         printf("\n");
+        ofstream myfile;
+        myfile.open ("outputPD.txt");
+        for(int i = 0; i < simTime; i++){
+            myfile << outputPD[i]<< ',';
+        }
+        myfile.close();
     }
 
     printf("Saida controlador PI\n");
-    for(int i = 0; i < 100; i++)
+    for(int i = 0; i < simTime; i++)
     {
         //printf("%f,%f", outputPD[i], outputPI[i]);
         
         printf("%f,", outputPI[i]);
         printf("\n");
+        ofstream myfile;
+        myfile.open ("outputPI.txt");
+        for(int i = 0; i < simTime; i++){
+            myfile << outputPI[i]<< ',';
+        }
+        myfile.close();
     }
 
     free(outputPI);
     free(outputPD);
-
 }
 
 int main()
@@ -232,7 +242,7 @@ int main()
         printf("%f,\n", output[i]);
     }*/
 
-    speedPIControl control2(0.2, 0.05, 0.1);
+    speedPIControl control2(0.3, 0.1, 0.1);
     
     /*float* output = control2.setOutputObserver(1000);
     for(int i = 0; i < 1000; i++){
@@ -245,9 +255,9 @@ int main()
     for(int i = 0; i < 1000; i++){
         myfile << output[i]<< ',';
     }
-    myfile.close();
-    */
+    myfile.close();*/
+    
 
-   seriesControl(control, control2);
+    seriesControl(control2, control, 3000);
     return 0;
 }

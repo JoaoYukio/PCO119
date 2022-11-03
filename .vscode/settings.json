@@ -1,6 +1,7 @@
 {
     "python.analysis.typeCheckingMode": "basic",
     "files.associations": {
-        "ostream": "cpp"
+        "ostream": "cpp",
+        "iosfwd": "cpp"
     }
 }
