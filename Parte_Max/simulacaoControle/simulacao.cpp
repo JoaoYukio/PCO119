@@ -27,6 +27,7 @@ float constrain(float e, int16_t min, int16_t max)
 }
 
 class degrau{
+    public:
     int size;
     int* deg;
     degrau(int size, int delay)
@@ -177,18 +178,63 @@ class speedPIControl{
     }
 };
 
+// Series control function
+void seriesControl(stabilityPDControl pd1, speedPIControl pi)
+{
+    float setPoint = 0; 
+    float input = 0;
+    float inputPI = 0;
+    float* outputPI = (float*)malloc(sizeof(float)*100);
+    float* outputPD = (float*)malloc(sizeof(float)*100);
 
+    for(int i = 0; i < 100 - 1; i++)
+    {
+        if(i < 10){
+            setPoint = 0;
+        }else{
+            setPoint = 1;
+        }
+        outputPD[i] = pd1.getControl(input, setPoint);
+        outputPI[i] = pi.getControl(setPoint, outputPD[i]);
+        
+        input = input + outputPI[i];
+        inputPI = outputPD[i] + outputPI[i];
+    }
+
+    printf("Saida controlador PD\n");
+    for(int i = 0; i < 100; i++)
+    {
+        //printf("%f,%f", outputPD[i], outputPI[i]);
+        
+        printf("%f,", outputPD[i]);
+        printf("\n");
+    }
+
+    printf("Saida controlador PI\n");
+    for(int i = 0; i < 100; i++)
+    {
+        //printf("%f,%f", outputPD[i], outputPI[i]);
+        
+        printf("%f,", outputPI[i]);
+        printf("\n");
+    }
+
+    free(outputPI);
+    free(outputPD);
+
+}
 
 int main()
 {
-    stabilityPDControl control(0.06, 0.45, 0.1);
+    stabilityPDControl control(0.2, 0.02, 0.1);
     /*float* output = control.setOutputObserver(100);
     for(int i = 0; i < 100; i++){
         printf("%f,\n", output[i]);
     }*/
 
-    speedPIControl control2(0.06, 0.05, 0.1);
-    float* output = control2.setOutputObserver(1000);
+    speedPIControl control2(0.2, 0.05, 0.1);
+    
+    /*float* output = control2.setOutputObserver(1000);
     for(int i = 0; i < 1000; i++){
         printf("%f,\n", output[i]);
     }
@@ -200,6 +246,8 @@ int main()
         myfile << output[i]<< ',' << "\n";
     }
     myfile.close();
+    */
 
+   seriesControl(control, control2);
     return 0;
 }
