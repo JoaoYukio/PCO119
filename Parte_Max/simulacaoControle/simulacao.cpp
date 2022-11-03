@@ -195,10 +195,10 @@ void seriesControl(stabilityPDControl pd1, speedPIControl pi)
             setPoint = 1;
         }
         outputPD[i] = pd1.getControl(input, setPoint);
-        outputPI[i] = pi.getControl(setPoint, outputPD[i]);
+        outputPI[i] = pi.getControl(setPoint,outputPD[i]);
         
         input = input + outputPI[i];
-        inputPI = outputPD[i] + outputPI[i];
+        inputPI = outputPD[i] - outputPI[i];
     }
 
     printf("Saida controlador PD\n");
@@ -243,7 +243,7 @@ int main()
     ofstream myfile;
     myfile.open ("output.txt");
     for(int i = 0; i < 1000; i++){
-        myfile << output[i]<< ',' << "\n";
+        myfile << output[i]<< ',';
     }
     myfile.close();
     */
