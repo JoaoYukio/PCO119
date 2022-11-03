@@ -29,6 +29,7 @@ float stabilityPDControl(float DT, float input, float setPoint,  float Kp, float
   //    And the second using the setpoint to make it a bit more agressive   setPoint-setPoint(t-1)
   float Kd_setPoint = constrain((setPoint - setPointOld), -8, 8); // We limit the input part...
   output = Kp * error + (Kd * Kd_setPoint - Kd * (input - PID_errorOld)) / DT;
+  //  output = Kp * error + (Kd * (setPoint - input - (setPointOld - PID_errorOld) ))) / DT;
   //Serial.print(Kd*(error-PID_errorOld));Serial.print("\t");
   //PID_errorOld2 = PID_errorOld;
   PID_errorOld = input;  // error for Kd is only the input component
