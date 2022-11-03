@@ -8,8 +8,6 @@
     Estrutura da simulação
 */
 
-#define int16_t int16_t
-
 using namespace std;
 
 int16_t constrain(int16_t e, int16_t min, int16_t max)
@@ -154,9 +152,9 @@ class speedPIControl{
     }
     float getControl(float input, float setPoint){
         float error = setPoint - input;
-        PID_errorSum += constrain(error, -ITERM_MAX_ERROR, ITERM_MAX_ERROR);;
+        PID_errorSum += constrain(error, -ITERM_MAX_ERROR, ITERM_MAX_ERROR);
         float control = Kp * error + Ki * PID_errorSum * dt;// DT is in miliseconds
-        control = constrain(control, -255, 255);
+        //control = constrain(control, -255, 255);
         return control;
     }
     float* setOutputObserver(int simTime){
@@ -178,9 +176,74 @@ class speedPIControl{
     }
 };
 
+class positionPDControl{
+    private:
+        float Kp;
+        float Kd;
+        float setPointOld;
+        float PID_errorOld;
+        float dt;
+    public:
+    positionPDControl(float Kp, float Kd, float dt){
+        this->Kp = Kp;
+        this->Kd = Kd;
+        this->dt = dt;
+    }
+    float getKp(){
+        return Kp;
+    }
+    float getKd(){
+        return Kd;
+    }
+    float getDt(){
+        return dt;
+    }
+    void setKp(float Kp){
+        this->Kp = Kp;
+    }
+    void setKd(float Kd){
+        this->Kd = Kd;
+    }
+    void setDt(float dt){
+        this->dt = dt;
+    }
+    float getControl(float input, float setPoint){
+        float output;
+        float P;
+
+        P = constrain(Kp * float(setPoint - input), -115, 115); // Limit command
+        output = P + Kd * float(setPoint - input);
+        return (output);
+    }
+    float* setOutputObserver(int simTime){
+        float* output = (float*)malloc(sizeof(float)*simTime);
+        float input = 0;
+        float setPoint = 0;
+        float control = 0;
+        for(int i = 0; i < simTime; i++){
+            if(i < 10){
+                setPoint = 0;
+            }else{
+                setPoint = 1;
+            }
+            control = getControl(input, setPoint);
+            input = input + control;
+            output[i] = input;
+        }
+        return output;
+    }
+};
+
+
 // Series control function
 void seriesControl(speedPIControl pi, stabilityPDControl pd1, int simTime)
 {
+    // Tentando simular o controlador em cascata
+    // A entrada do controlador PI eh a velocidade desejada do robo
+    // A saida do controlador PI eh o angulo necessario para tal velocidade
+    // A entrada do controlador PD eh o angulo necessario para tal velocidade
+    // A saida do controlador PD eh a velocidade que os motores precisam para manter a estabilidade e a velocidade desejada
+
     float setPoint = 0; 
     //float input = 0;
     float outPD = 0;
@@ -236,28 +299,28 @@ void seriesControl(speedPIControl pi, stabilityPDControl pd1, int simTime)
 
 int main()
 {
-    stabilityPDControl control(0.2, 0.02, 0.1);
-    /*float* output = control.setOutputObserver(100);
+    stabilityPDControl control(0.8, 0.01, 0.1);
+    float* output = control.setOutputObserver(1000);
     for(int i = 0; i < 100; i++){
         printf("%f,\n", output[i]);
-    }*/
+    }
 
-    speedPIControl control2(0.3, 0.1, 0.1);
+    speedPIControl control2(0.8, 1.5, 0.1);
     
     /*float* output = control2.setOutputObserver(1000);
     for(int i = 0; i < 1000; i++){
         printf("%f,\n", output[i]);
-    }
+    }*/
     
     //Write the output to a file
     ofstream myfile;
-    myfile.open ("output.txt");
+    myfile.open ("outSoloPD.txt");
     for(int i = 0; i < 1000; i++){
         myfile << output[i]<< ',';
     }
-    myfile.close();*/
+    myfile.close();
     
 
-    seriesControl(control2, control, 3000);
+    //seriesControl(control2, control, 3000);
     return 0;
 }
