@@ -299,7 +299,7 @@ void seriesControl(speedPIControl pi, stabilityPDControl pd1, int simTime)
 
 int main()
 {
-    stabilityPDControl control(0.8, 0.01, 0.1);
+    stabilityPDControl control(0.3, 0.01, 0.1);
     float* output = control.setOutputObserver(1000);
     for(int i = 0; i < 100; i++){
         printf("%f,\n", output[i]);
