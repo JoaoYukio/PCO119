@@ -300,23 +300,48 @@ void seriesControl(speedPIControl pi, stabilityPDControl pd1, int simTime)
 int main()
 {
     stabilityPDControl control(0.3, 0.01, 0.1);
-    float* output = control.setOutputObserver(1000);
+    /*float* output = control.setOutputObserver(1000);
     for(int i = 0; i < 100; i++){
         printf("%f,\n", output[i]);
-    }
+    }*/
 
-    speedPIControl control2(0.8, 1.5, 0.1);
+    speedPIControl control2(0.5, 0.2, 0.1);
     
     /*float* output = control2.setOutputObserver(1000);
     for(int i = 0; i < 1000; i++){
         printf("%f,\n", output[i]);
     }*/
+    float* out = new float[1000];
+    float* in = new float[1000];
+    float* set = new float[1000];
+
+    for(int i = 0; i < 1000; i++){
+        in[i] = 0;
+        set[i] = 0;
+    }
+    /*
+    for(int i = 0; i < 100; i++){
+        if(i > 10){
+            set[i] = 1;
+        }
+        out[i] = control.getControl(in[i], set[i]);
+        in[i+1] = out[i];
+    }
+    */
+    // Get the output of the control2 using the diference equation
+    for(int i = 0; i < 1000; i++){
+        if(i > 10){
+            set[i] = 1;
+        }
+        out[i] = control2.getControl(in[i], set[i]);
+        in[i+1] = out[i];
+    }
     
     //Write the output to a file
     ofstream myfile;
-    myfile.open ("outSoloPD.txt");
+    myfile.open ("outSoloPIgetControl.txt");
     for(int i = 0; i < 1000; i++){
-        myfile << output[i]<< ',';
+        myfile << out[i]<< ',';
     }
     myfile.close();
     
