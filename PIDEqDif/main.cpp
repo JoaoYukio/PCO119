@@ -2,6 +2,7 @@
 #include "defines.h"
 #include <string>
 #include <fstream>
+#include <chrono>
 
 #define SHIFT (256)
 
@@ -171,13 +172,18 @@ int main()
     }
 
     //Simulate a step response for the PI controller
+
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
     for(int i = 0; i < size; i++)
     {
         output = PI.controlEqDif(deg[i], input);
         myfile << output << ",";
         input = output;
     }
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 
+    cout << "Time difference using float = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
 
     int outputPF = 0;
     int inputPF = 0;
@@ -192,12 +198,15 @@ int main()
         }
     }
     
+    begin = std::chrono::steady_clock::now();
     for(int i = 0; i < size; i++)
     {
         outputPF = PIPF.controlEqDif(degI[i], inputPF);
         myfilePF << outputPF << ",";
         inputPF = outputPF;
     }
+    end = std::chrono::steady_clock::now();
+    cout << "Time difference using fixed point = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
 
     return 0;
 }
