@@ -266,7 +266,7 @@ int main()
     
 
     // Simulate the system with the equation of difference
-    myfile.open ("rcTest.txt");
+    myfile.open ("eqDifPF.txt");
     // Simulate the system
     /*
     for(int i = 0; i < size; i++)
@@ -288,14 +288,14 @@ int main()
     }
     */
     // Testa um controlador PI usando ponto fixo
-    /*
+    
     PIControlPF piPF(1, 0.3, 0.1);
     for(int i = 0; i < size; i++)
     {
-        output = piPF.controlEqDif(deg[i], input);
+        output = piPF.controlEqDif(10*deg[i], input);
         myfile << output << ",";
         input = output;
-    }*/
+    }
 
     //Create a float degree array
     float* degF = (float*)malloc(sizeof(float)*size);
@@ -314,12 +314,15 @@ int main()
         input = output;
     }*/
     // Simula um circuito RC sem controlador
+    /*
     for(int i = 0; i < size; i++)
     {
         output = rc.update(degF[i]);
         myfile << output << ",";
         input = output;
     }
+    
+    */
     
     myfile.close();
 
