@@ -7,6 +7,7 @@
 /*
     Estrutura da simulação
 */
+#define int16_t short
 
 using namespace std;
 

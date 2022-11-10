@@ -4,7 +4,7 @@
 #include <string>
 #include <fstream>
 
-#define SHIFT (256)
+#define SHIFT (1024)
 
 // Create constrain
 int16_t constrain(int16_t e, int16_t min, int16_t max)
@@ -151,50 +151,72 @@ class PDControl{
 
 class PIControlPF{
 private:
-        int16_t Kp;
-        int16_t Ki;
+        float Kp;
+        float Ki;
+
         int16_t k1;
         int16_t k2;
         int16_t k3;
 
         float dt;
-        float errorOld;
-        float errorSum;
-        float Iout;
-        float Pout;
-        float o_1;
-        float e_1;
-        float error;
+        int errorOld;
+        int o_1;
+        int e_1;
+        int y_0;
+        int error;
         
     public:
-    PIControlPF(int16_t Kp, int16_t Ki, float dt){
+    PIControlPF(float Kp, float Ki, float dt){
         this->Kp = Kp;
         this->Ki = Ki;
         this->dt = dt;
-        this->errorOld = 0;
-        this->errorSum = 0;
-        this->Iout = 0;
-        this->Pout = 0;
         this->o_1 = 0;
         this->e_1 = 0;
         this->error = 0;
+        this->y_0 = 0;
 
         this->k1 = (Kp + (Ki*dt)) * SHIFT; // i_k1 = (f_kp + f_ki * f_T + f_kd / f_T) * SHIFT;
         this->k2 = -(Kp*SHIFT); // i_k2 = -((f_kp + 2 * f_kd / f_T) * SHIFT);
         this->k3 = 0; //i_k3 = (f_kd / f_T) * SHIFT;
 
     }
-    float controlEqDif(float setPoint, float input){
-        float output;
+    int controlEqDif(int setPoint, int input){
+        o_1 = y_0;
         e_1 = error;
         error = setPoint - input;
 
-        Pout = Kp*(error - e_1);
+        y_0 = ((int32_t) k1*error + (int32_t) k2*e_1);
+        y_0 = y_0 >> 10;
+        y_0 += o_1;
 
-        Iout = dt * Ki * error;
+        return y_0;
+    }
+};
 
-        output = o_1 + Pout + Iout;
-        o_1 = output;
+class RCCircuit{
+    //Implements a simple RC circuit using the Euler method
+    private:
+        float R;
+        float C;
+        float dt;
+        float output;
+        float input;
+        float outputOld;
+        float inputOld;
+    public:
+    RCCircuit(float R, float C, float dt){
+        this->R = R;
+        this->C = C;
+        this->dt = dt;
+        this->output = 0;
+        this->input = 0;
+        this->outputOld = 0;
+        this->inputOld = 0;
+    }
+    float update(float input){
+        outputOld = output;
+        inputOld = input;
+        output = outputOld + (dt/C) * (inputOld - outputOld);
         return output;
     }
 };
@@ -208,7 +230,7 @@ int main()
 
     PDControl pd(0.3, 0.01, 0.1);
     // Create a step
-    int size = 5000;
+    int size = 1000;
     int delay = 10;
     int* deg = (int*)malloc(sizeof(int)*size);
     for(int i = 0; i < size; i++)
@@ -224,8 +246,8 @@ int main()
     // Create a file to save the data
     ofstream myfile;
 
-    float input = 0;
-    float output = 0;
+    int input = 0;
+    int output = 0;
     /*
     
     myfile.open ("example.txt");
@@ -244,7 +266,7 @@ int main()
     
 
     // Simulate the system with the equation of difference
-    myfile.open ("seriesEx.txt");
+    myfile.open ("rcTest.txt");
     // Simulate the system
     /*
     for(int i = 0; i < size; i++)
@@ -255,6 +277,7 @@ int main()
     }
     */
     // Simulate a PI controller in cascade with a PD controller
+    /*
     float outputPI = 0;
     for(int i = 0; i < size; i++)
     {
@@ -263,9 +286,41 @@ int main()
         myfile << output << ",";
         input = output;
     }
+    */
+    // Testa um controlador PI usando ponto fixo
+    /*
+    PIControlPF piPF(1, 0.3, 0.1);
+    for(int i = 0; i < size; i++)
+    {
+        output = piPF.controlEqDif(deg[i], input);
+        myfile << output << ",";
+        input = output;
+    }*/
 
+    //Create a float degree array
+    float* degF = (float*)malloc(sizeof(float)*size);
+    for(int i = 0; i < size; i++)
+    {
+        degF[i] = (float)deg[i]*10;
+    }
+    //Controla um circuito RC usando um controlador PI  
+    RCCircuit rc(1, 10, 0.1);
+    /*int outputPI = 0;
+    for(int i = 0; i < size; i++)
+    {
+        outputPI = pi.control(deg[i]*10, input);
+        output = rc.update(outputPI);
+        myfile << output << ",";
+        input = output;
+    }*/
+    // Simula um circuito RC sem controlador
+    for(int i = 0; i < size; i++)
+    {
+        output = rc.update(degF[i]);
+        myfile << output << ",";
+        input = output;
+    }
     
-
     myfile.close();
 
     return 0;
