@@ -87,11 +87,11 @@ private:
         int16_t k3;
 
         float dt;
-        int errorOld;
+        int16_t errorOld;
         int16_t o_1;
-        float e_1;
+        int16_t e_1;
         int16_t y_0;
-        float error;
+        int16_t error;
         
     public:
     PIControlPF(float Kp, float Ki, float dt){
@@ -102,22 +102,19 @@ private:
         this->e_1 = 0;
         this->error = 0;
         this->y_0 = 0;
-
+//fast inverse square root
         this->k1 = (Kp + (Ki*dt)) * SHIFT; // i_k1 = (f_kp + f_ki * f_T + f_kd / f_T) * SHIFT;
         this->k2 = -(Kp*SHIFT); // i_k2 = -((f_kp + 2 * f_kd / f_T) * SHIFT);
         this->k3 = 0; //i_k3 = (f_kd / f_T) * SHIFT;
 
     }
-
+    
+    /*
     int controlEqDif(float setPoint, float input){
         int output;
-        float temp;
         e_1 = error;
         error = setPoint - input;
-
-
-        //temp = (Kp*(error - e_1)) + (dt * Ki * error);//(k1 * error + k2 * e_1 + k3 * o_1) >> 10;
-        //y_0 = (multPF(Kp, (error - e_1)) + multPF(dt, multPF(Ki, error)));
+        
         y_0 = (Kp*(error - e_1)*SHIFT) + (dt * Ki * error *SHIFT);
         y_0 = y_0>>8;
         y_0 = y_0 + o_1;
@@ -126,19 +123,31 @@ private:
         o_1 = output;
         return output;
     }
-    /*
-    int controlEqDif(float setPoint, float input){
+    */
+    
+    
+    int controlEqDif(int16_t setPoint, int16_t input){
         o_1 = y_0;
         e_1 = error;
         error = setPoint - input;
-
-        y_0 = ((int32_t) k1*error + (int32_t) k2*e_1);
+        //2 x 4 = 8
+        //2,0 * 4,0 = 8,0
+        //20 * 40 = 800
+        y_0 = ( k1*error + k2*e_1);
         y_0 = y_0 >> 8; // shift = 2**8
         y_0 += o_1;
 
+        if (y_0>1023){
+            y_0 = 1023;
+        }
+        if (y_0<0){
+            y_0 = 0;
+        }
         return y_0;
     }
-    */
+    
+    
+    
     
 };
 
