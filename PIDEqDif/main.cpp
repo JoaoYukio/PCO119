@@ -23,10 +23,18 @@ class PIControl{
     float Ki;
     float DT;
     int16_t PID_errorSum;
-    int16_t PID_errorOld;
-    int16_t setPointOld;
+    //int16_t PID_errorOld;
+    //int16_t setPointOld;
     public:
-    PIControl(float Kp, float Ki, float DT):Kp(Kp), Ki(Ki), DT(DT), PID_errorSum(0), PID_errorOld(0), setPointOld(0){}
+    PIControl(float Kp, float Ki, float DT)
+    {
+        this->Kp = Kp;
+        this->Ki = Ki;
+        this->DT = DT;
+        PID_errorSum = 0;
+        //PID_errorOld = 0;
+        //setPointOld = 0;
+    }
     float speedPIControl(int16_t input, int16_t setPoint){
         error = setPoint - input;
         PID_errorSum += constrain(error, -ITERM_MAX_ERROR, ITERM_MAX_ERROR);
