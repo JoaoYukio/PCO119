@@ -15,6 +15,27 @@ int16_t constrain(int16_t e, int16_t min, int16_t max)
   return e;
 }
 
+class PIControl{
+    private:
+    int16_t error;
+    float output;
+    float Kp;
+    float Ki;
+    float DT;
+    int16_t PID_errorSum;
+    int16_t PID_errorOld;
+    int16_t setPointOld;
+    public:
+    PIControl(float Kp, float Ki, float DT):Kp(Kp), Ki(Ki), DT(DT), PID_errorSum(0), PID_errorOld(0), setPointOld(0){}
+    float speedPIControl(int16_t input, int16_t setPoint){
+        error = setPoint - input;
+        PID_errorSum += constrain(error, -ITERM_MAX_ERROR, ITERM_MAX_ERROR);
+        PID_errorSum = constrain(PID_errorSum, -ITERM_MAX, ITERM_MAX);
+        output = Kp * error + Ki * PID_errorSum * DT; // DT is in miliseconds...
+        return (output);
+    }
+};
+
 class F_PIControl{
     private:
         float Kp;
@@ -144,16 +165,13 @@ private:
             y_0 = 0;
         }
         return y_0;
-    }
-    
-    
-    
-    
+    }   
 };
 
 int main()
 {
     //Create a PI controller
+    PIControl myPI(0.5, 7, 0.1);
     F_PIControl PI(0.5, 7, 0.1);
     PIControlPF PIPF(0.5, 7, 0.1);
     
@@ -166,6 +184,9 @@ int main()
     //Create a file to save the data
     ofstream myfilePF;
     myfilePF.open ("PIControlPF.txt");
+
+    ofstream myfileF;
+    myfileF.open ("PIControlF.txt");
 
     float output = 0;
     float input = 0;
@@ -194,6 +215,16 @@ int main()
     end = std::chrono::steady_clock::now();
 
     cout << "Time difference using float = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
+
+    begin = std::chrono::steady_clock::now();
+    for(int i = 0; i < size; i++)
+    {
+        output = myPI.speedPIControl(input, deg[i]);
+        myfileF << output << ",";
+        input = output;
+    }
+    end = std::chrono::steady_clock::now();
+    cout << "Time difference using original control = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
 
     int outputPF = 0;
     int inputPF = 0;
