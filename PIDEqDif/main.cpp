@@ -170,10 +170,11 @@ int main()
             deg[i] = 10;
         }
     }
-
+    std::chrono::steady_clock::time_point begin;
+    std::chrono::steady_clock::time_point end;
     //Simulate a step response for the PI controller
 
-    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+    begin = std::chrono::steady_clock::now();
 
     for(int i = 0; i < size; i++)
     {
@@ -181,7 +182,7 @@ int main()
         myfile << output << ",";
         input = output;
     }
-    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    end = std::chrono::steady_clock::now();
 
     cout << "Time difference using float = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
 
