@@ -44,6 +44,46 @@ class PIControl{
     }
 };
 
+class F_PDControl{
+    private:
+        float Kp;
+        float Kd;
+        float dt;
+        float errorOld;
+        float errorSum;
+        float Iout;
+        float Pout;
+        float o_1;
+        float e_1;
+        float e_2;
+        float error;
+        public:
+        F_PDControl(float Kp, float Kd, float dt){
+            this->Kp = Kp;
+            this->Kd = Kd;
+            this->dt = dt;
+            this->errorOld = 0;
+            this->errorSum = 0;
+            this->Iout = 0;
+            this->Pout = 0;
+            this->o_1 = 0;
+            this->e_1 = 0;
+            this->e_2 = 0;
+            this->error = 0;
+        }
+        float eqDifPD(float setPoint, float input)
+        {
+            // TODO: Testar
+            
+            e_2 = e_1;
+            e_1 = error;
+            error = setPoint - input;
+            float output = Kp*(error - e_1) + (Kd/dt)*(error - 2*e_1 + e_2);
+            return output;
+        }
+        
+};
+
 class F_PIControl{
     private:
         float Kp;
