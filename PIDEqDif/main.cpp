@@ -51,12 +51,15 @@ class F_PDControl{
         float dt;
         float errorOld;
         float errorSum;
-        float Iout;
         float Pout;
+        float Dout;
         float o_1;
         float e_1;
         float e_2;
         float error;
+        float Kd_setPoint;
+        float setPointOld;
+        float PID_errorOld;
         public:
         F_PDControl(float Kp, float Kd, float dt){
             this->Kp = Kp;
@@ -64,22 +67,51 @@ class F_PDControl{
             this->dt = dt;
             this->errorOld = 0;
             this->errorSum = 0;
-            this->Iout = 0;
             this->Pout = 0;
+            this->Dout = 0;
             this->o_1 = 0;
             this->e_1 = 0;
             this->e_2 = 0;
             this->error = 0;
+            this->Kd_setPoint = 0;
+            this->setPointOld = 0;
+            this->PID_errorOld = 0;
         }
         float eqDifPD(float setPoint, float input)
-        {
-            // TODO: Testar
+        {   
+            error = setPoint - input;
+            float output = o_1 + Kp*(error - e_1) + (Kd/dt)*(error - 2*e_1 + e_2);
             
+            /*
+            if(output > 255)output = 255;
+            if(output < 0)output = 0;
+            */
             e_2 = e_1;
             e_1 = error;
-            error = setPoint - input;
-            float output = Kp*(error - e_1) + (Kd/dt)*(error - 2*e_1 + e_2);
+            o_1 = output;
             return output;
+        }
+        float control(float setPoint, float input)
+        {
+            //Implements a PD controller
+            error = setPoint - input;
+            float derivative = (error - e_1) / dt;
+            Pout = Kp * error;
+            Dout = Kd * derivative;
+            float output = Pout + Dout;
+
+            e_1 = error;
+            return output;
+
+        }
+        float stabilityPDControl(float setPoint, float input)
+        {
+            error = setPoint - input;
+            Kd_setPoint = constrain((setPoint - setPointOld), -8, 8); // We limit the input part...
+            float output = Kp * error +(Kd*Kd_setPoint - Kd *(input -PID_errorOld)) / dt;
+            PID_errorOld = input;
+            setPointOld = setPoint;
+            return (output);
         }
         
 };
@@ -226,6 +258,7 @@ int main()
     int size = 200;
 
     //Create a file to save the data
+    /*
     ofstream myfile;
     myfile.open ("PIControl.txt");
 
@@ -296,6 +329,63 @@ int main()
     }
     end = std::chrono::steady_clock::now();
     cout << "Time difference using fixed point = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
+
+    */
+    F_PDControl PD(0.5, 0.005, 0.1);
+    float output = 0;
+    
+    float* deg = new float[size];
+
+    ofstream myfileF;
+    myfileF.open ("PDControlF.txt");
+
+    for(int i = 0; i < size; i++){
+        if (i < 25){
+            deg[i] = 0;
+        }else{
+            deg[i] = 10;
+        }
+    }
+    std::chrono::steady_clock::time_point begin;
+    std::chrono::steady_clock::time_point end;
+
+    begin = std::chrono::steady_clock::now();
+    for(int i = 0; i < size; i++)
+    {
+        output = PD.stabilityPDControl(deg[i], output);
+        myfileF << output << ",";
+    }
+    end = std::chrono::steady_clock::now();
+
+    cout << "Time difference using float = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
+
+    F_PDControl control2(0.5, 0.005, 0.1);
+
+    ofstream myfile2;
+    myfile2.open ("PDControlImp.txt");    
+
+    begin = std::chrono::steady_clock::now();
+    for(int i = 0; i < size; i++)
+    {
+        output = control2.eqDifPD(deg[i], output);
+        myfile2 << output << ",";
+    }
+    end = std::chrono::steady_clock::now();
+    
+    cout << "Time difference using eq. dif = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
+
+    ofstream myfile3;
+    myfile3.open("PDControlConta.txt");
+
+    begin = std::chrono::steady_clock::now();
+    for(int i = 0; i < size; i++)
+    {
+        output = control2.control(deg[i], output);
+        myfile3 << output << ",";
+    }
+    end = std::chrono::steady_clock::now();
+
+    cout << "Time difference using conta = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
 
     return 0;
 }
