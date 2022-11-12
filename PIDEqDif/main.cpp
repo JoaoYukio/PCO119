@@ -178,6 +178,9 @@ int multPF(float a, float b){
     return d;
 }
 
+// PRECISEI MUDAR O SHIFT AQUI, PARA AUMENTAR A RESOLUCAO//
+#define SHIFT2 (8)
+
 class PDControlPF{
     private:
         float Kp;
@@ -206,33 +209,53 @@ class PDControlPF{
         this->y_0 = 0;
         this->e_2 = 0;
 
-        this->k1 = (Kp + (Kd/dt)) * SHIFT; // i_k1 = (f_kp + f_ki * f_T + f_kd / f_T) * SHIFT;
-        this->k2 = -((Kp + (2*(Kd/dt)))*SHIFT); // i_k2 = -((f_kp + 2 * f_kd / f_T) * SHIFT);
-        this->k3 = (Kd/dt) * SHIFT; //i_k3 = (f_kd / f_T) * SHIFT;
+        this->k1 = (Kp + (Kd/dt)) * SHIFT2; // i_k1 = (f_kp + f_ki * f_T + f_kd / f_T) * SHIFT;
+        this->k2 = -((Kp + (2*(Kd/dt)))*SHIFT2); // i_k2 = -((f_kp + 2 * f_kd / f_T) * SHIFT);
+        this->k3 = (Kd/dt) * SHIFT2; //i_k3 = (f_kd / f_T) * SHIFT;
 
     }    
+
+    void printKd(){
+        cout << "Kd: " << Kd << endl;
+    }
+
+    void printKp(){
+        cout << "Kp: " << Kp << endl;
+    }
+
+    void printK1(){
+        cout << "K1: " << k1 << endl;
+    }
+
+    void printK2(){
+        cout << "K2: " << k2 << endl;
+    }
+
+    void printK3(){
+        cout << "K3: " << k3 << endl;
+    }
     
     int controlEqDif(int16_t setPoint, int16_t input){
-        o_1 = y_0;
-        e_2 = e_1;
-        e_1 = error;
         error = setPoint - input;
         //2 x 4 = 8
         //2,0 * 4,0 = 8,0
         //20 * 40 = 800
         y_0 = ((k1*error) + (k2*e_1) + (k3*e_2));
-        y_0 = y_0 >> 8; // shift = 2**8
-        y_0 +=  o_1;
+        // NOVO SHIFT, PARA TER UMA RESOLUCAO MELHOR
+        y_0 = y_0 >> 3; // shift2 = 2**12
+        y_0 += o_1;
         
-        /*
+        
         if (y_0>1023){
             y_0 = 1023;
         }
-        if (y_0<0){
-            y_0 = 0;
-        }
-        */
         
+        if (y_0<-10){
+            y_0 = -10;
+        }
+        e_2 = e_1;
+        e_1 = error;
+        o_1 = y_0;
         return y_0;
     }   
 };
@@ -380,7 +403,7 @@ int main()
         if (i < 25){
             degI[i] = 0;
         }else{
-            degI[i] = 10;
+            degI[i] = 1000;
         }
     }
     
@@ -407,7 +430,7 @@ int main()
         if (i < 25){
             deg[i] = 0;
         }else{
-            deg[i] = 10;
+            deg[i] = 1000;
         }
     }
     //std::chrono::steady_clock::time_point begin;
@@ -456,21 +479,19 @@ int main()
     myfile4.open("PDControlPF.txt");
 
     PDControlPF control3(0.5, 0.005, 0.1);
+    /*
+    control3.printK1();
+    control3.printK2();
+    control3.printK3();
 
+    control3.printKd();
+    control3.printKp();
+
+    */
+    
     int outInt = 0;
     int inputInt = 0;
 
-    //int* degI = new int[size];
-    /*
-    for(int i = 0; i < size; i++){
-        if (i < 25){
-            degI[i] = 0;
-        }else{
-            degI[i] = 10;
-        }
-    }
-
-    */
     
     begin = std::chrono::steady_clock::now();
     for(int i = 0; i < size; i++)
