@@ -178,8 +178,67 @@ int multPF(float a, float b){
     return d;
 }
 
+class PDControlPF{
+    private:
+        float Kp;
+        float Kd;
+
+        int16_t k1;
+        int16_t k2;
+        int16_t k3;
+
+        float dt;
+        int16_t errorOld;
+        int16_t o_1;
+        int16_t e_1;
+        int16_t e_2;
+        int16_t y_0;
+        int16_t error;
+        
+    public:
+    PDControlPF(float Kp, float Kd, float dt){
+        this->Kp = Kp;
+        this->Kd = Kd;
+        this->dt = dt;
+        this->o_1 = 0;
+        this->e_1 = 0;
+        this->error = 0;
+        this->y_0 = 0;
+        this->e_2 = 0;
+
+        this->k1 = (Kp + (Kd/dt)) * SHIFT; // i_k1 = (f_kp + f_ki * f_T + f_kd / f_T) * SHIFT;
+        this->k2 = -((Kp + (2*(Kd/dt)))*SHIFT); // i_k2 = -((f_kp + 2 * f_kd / f_T) * SHIFT);
+        this->k3 = (Kd/dt) * SHIFT; //i_k3 = (f_kd / f_T) * SHIFT;
+
+    }    
+    
+    int controlEqDif(int16_t setPoint, int16_t input){
+        o_1 = y_0;
+        e_2 = e_1;
+        e_1 = error;
+        error = setPoint - input;
+        //2 x 4 = 8
+        //2,0 * 4,0 = 8,0
+        //20 * 40 = 800
+        y_0 = ((k1*error) + (k2*e_1) + (k3*e_2));
+        y_0 = y_0 >> 8; // shift = 2**8
+        y_0 +=  o_1;
+        
+        /*
+        if (y_0>1023){
+            y_0 = 1023;
+        }
+        if (y_0<0){
+            y_0 = 0;
+        }
+        */
+        
+        return y_0;
+    }   
+};
+
 class PIControlPF{
-private:
+    private:
         float Kp;
         float Ki;
 
@@ -234,7 +293,7 @@ private:
         //2 x 4 = 8
         //2,0 * 4,0 = 8,0
         //20 * 40 = 800
-        y_0 = ( k1*error + k2*e_1);
+        y_0 = (k1*error + k2*e_1);
         y_0 = y_0 >> 8; // shift = 2**8
         y_0 += o_1;
 
@@ -306,11 +365,16 @@ int main()
     }
     end = std::chrono::steady_clock::now();
     cout << "Time difference using original control = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
-
+    */
     int outputPF = 0;
     int inputPF = 0;
+    std::chrono::steady_clock::time_point begin;
+    std::chrono::steady_clock::time_point end;
 
     int* degI = new int[size];
+
+    ofstream myfilePF;
+    myfilePF.open ("PIControlPF.txt");
 
     for(int i = 0; i < size; i++){
         if (i < 25){
@@ -330,7 +394,7 @@ int main()
     end = std::chrono::steady_clock::now();
     cout << "Time difference using fixed point = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
 
-    */
+    
     F_PDControl PD(0.5, 0.005, 0.1);
     float output = 0;
     
@@ -346,8 +410,8 @@ int main()
             deg[i] = 10;
         }
     }
-    std::chrono::steady_clock::time_point begin;
-    std::chrono::steady_clock::time_point end;
+    //std::chrono::steady_clock::time_point begin;
+    //std::chrono::steady_clock::time_point end;
 
     begin = std::chrono::steady_clock::now();
     for(int i = 0; i < size; i++)
@@ -386,6 +450,37 @@ int main()
     end = std::chrono::steady_clock::now();
 
     cout << "Time difference using conta = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
+
+    
+    ofstream myfile4;
+    myfile4.open("PDControlPF.txt");
+
+    PDControlPF control3(0.5, 0.005, 0.1);
+
+    int outInt = 0;
+    int inputInt = 0;
+
+    //int* degI = new int[size];
+    /*
+    for(int i = 0; i < size; i++){
+        if (i < 25){
+            degI[i] = 0;
+        }else{
+            degI[i] = 10;
+        }
+    }
+
+    */
+    
+    begin = std::chrono::steady_clock::now();
+    for(int i = 0; i < size; i++)
+    {
+        outInt = control3.controlEqDif(degI[i], inputInt);
+        myfile4 << outInt << ",";
+        inputInt = outInt;
+    }
+    end = std::chrono::steady_clock::now();
+    cout << "Time difference using fixed point = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
 
     return 0;
 }
