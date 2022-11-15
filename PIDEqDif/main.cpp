@@ -479,6 +479,7 @@ int main()
     myfile4.open("PDControlPF.txt");
 
     PDControlPF control3(0.5, 0.005, 0.1);
+    
     /*
     control3.printK1();
     control3.printK2();
@@ -486,7 +487,6 @@ int main()
 
     control3.printKd();
     control3.printKp();
-
     */
     
     int outInt = 0;
